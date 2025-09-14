@@ -1,0 +1,9 @@
+{
+    "title": "PeakMapPHApp",
+    "identifier": "com.plm.PeakMapPHApp",
+    "orientation": "auto",
+    "versioncode": 1,
+    "versionname": "1.0.0",
+    "stage": "test",
+    "backend_api":"http://192.168.1.80:3001/graphql"
+}
