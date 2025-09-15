@@ -56,7 +56,7 @@ AppMap {
         if (pinNumber > -1) {
             // Pin already exists — just update its position
             pins[pinNumber].coordinate = QtPositioning.coordinate(latitude, longitude)
-
+            pins[pinNumber].congestionLevel= congestionLevel.toLowerCase()
         } else {
             // Create new pin
             var pin = pinComponen.createObject(map)

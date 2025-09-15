@@ -8,7 +8,7 @@ CoreGraphQL{
      queryInput: CapacityLoadInput{
         id: capLoad
      }
-     queryResponse:  BusActivity{
+     queryResponse: CapacityLoadType{
 
      }
      graphqlType: GraphQLType.subscriptionType

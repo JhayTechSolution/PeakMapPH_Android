@@ -18,4 +18,13 @@ CoreResponse{
         dataType: CoreType.stringType
         include: true
     }
+    property CoreResponseMarker congestionLevel: CoreResponseMarker{
+        dataType: CoreType.stringType
+        include: true
+    }
+    property CoreResponseMarker location: CoreResponseMarker{
+        dataType: "LocationType"
+        include:true
+        resultObject: LocationPointType{}
+    }
 }

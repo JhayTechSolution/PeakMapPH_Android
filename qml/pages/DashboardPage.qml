@@ -238,14 +238,25 @@ Item{
                     height: parent.height
                     property int maxPassenger
                     property int currentPassenger
+                    property string congestionLevel:"LIGHT"
                     background: Rectangle{
                         color:"#686868"
                         radius: 8
                     }
                     contentItem: Rectangle{
                         id : indicator
-                        width:  loadBar.width * loadBar.value
-
+                        width:   loadBar.width * loadBar.value
+                        color: {
+                            let cg = loadBar.congestionLevel.toUpperCase()
+                            console.log(cg)
+                            if(cg === "LIGHT"){
+                                return "#A3E635"
+                            }else if(cg === "MODERATE"){
+                                return "#F59E0B"
+                            }else{
+                                return "#EF4444"
+                            }
+                        }
 
                         radius: 8
                     }
@@ -259,7 +270,18 @@ Item{
                                          })
                             return
                         }
-                        animIndicator.start()
+                        Qt.callLater(()=>{
+                            if(loadBar.congestionLevel.toUpperCase() === "FULL"){
+                                indicator.width  = loadBar.width
+                                return
+                            }
+                            if(currentPassenger === 0){
+                                indicator.width = 0
+                                return
+                            }
+
+                            animIndicator.start()
+                                     })
 
                     }
                     property int lastValue: 0
@@ -267,7 +289,7 @@ Item{
                         id: animIndicator
                         target: indicator
                         from: loadBar.lastValue
-                        to: loadBar.width* loadBar.value
+                        to: (loadBar.congestionLevel.toUpperCase() === "FULL") ? loadBar.width:  loadBar.width* loadBar.value
                         property: "width"
                         easing: Easing.OutBounce
                         duration: 800
@@ -402,6 +424,8 @@ Item{
 
 
     Component.onCompleted: {
+        gbn.busId="12f50f9570d37b983293e208aee898391423d6c9b85c12e1ec2e43c0a6b39ccc"
+        gbn.sendRequest((s,e)=>{})
     }
     Timer{
         repeat:true
@@ -500,13 +524,17 @@ Item{
                     routeBus.model= [
                         {
                             "bus": capacity.busName.value,
-                            "route":"Getting info, Please wait.."
+                            "route":capacity.location.resultObject.routeName.value
                         }
                     ]
                     numPassenger.passenger = capacity.currentPassengers.value
                     loadBar.maxPassenger = capacity.maxPassengers.value
                     loadBar.currentPassenger =  capacity.currentPassengers.value
-                    console.log("SUBS ", JSON.stringify(busActivity))
+                    loadBar.congestionLevel = capacity.congestionLevel.value
+                    let location = capacity.location.resultObject
+                    if(location.routeName.value){
+                        map.addPin(location.latitude.value , location.longitude.value , gbn.busId, loadBar.congestionLevel )
+                    }
                     busActivity.subscribe()
                 }
             }
@@ -521,11 +549,23 @@ Item{
     BusActivityUpdateSubscription{
         id: busActivity
         dataItem: Component{
-            BusActivity{
+            CapacityLoadType{
                 id: ba
                 onCaptureData: {
-                    loadBar.currentPassenger = ba.passengerCount.value
-                    numPassenger.passenger = ba.passengerCount.value
+                    loadBar.currentPassenger = ba.currentPassengers.value
+                    numPassenger.passenger = ba.currentPassengers.value
+
+                    loadBar.congestionLevel= ba.congestionLevel.value
+                    var lastModel =  routeBus.model
+                    lastModel[0].route = ba.location.resultObject.routeName.value
+
+
+                    routeBus.model =[]
+                    routeBus.model = lastModel
+                    let location = ba.location.resultObject
+                    if(location.routeName.value){
+                        map.addPin(location.latitude.value, location.longitude.value,busActivity.busId, loadBar.congestionLevel)
+                    }
                 }
             }
         }
