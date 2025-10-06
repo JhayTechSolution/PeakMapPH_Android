@@ -3,7 +3,7 @@ import QtMultimedia
 import QtQuick.Controls
 import Com.Plm.PeakMapPH 1.0
 import QtQuick.Layouts
-
+import QtCore
 Item {
     id: root
     anchors.fill: parent
@@ -21,7 +21,7 @@ Item {
         id: mCamera
         focusMode: Camera.FocusModeInfinity
 
-        active:true
+        active:false
         onErrorOccurred: (error, errorString) => {
             console.warn("Camera error:", error, errorString)
             restart()
@@ -128,6 +128,7 @@ Item {
     }
 
     function paused() {
+        /*
         Qt.callLater(()=>{
                          try{
                              mCamera.active = false
@@ -136,10 +137,13 @@ Item {
                          }
 
                      })
+                     */
+        mCamera.active= false;
     }
 
     function resume() {
         lastCapture = null
+        /*
         // set preferred format once
         for (var i = 0; i < mCamera.cameraDevice.videoFormats.length; i++) {
             var fmt = mCamera.cameraDevice.videoFormats[i]
@@ -152,6 +156,8 @@ Item {
         mCamera.active=false
         mCamera.active = true
         mCamera.start()
+        */
+        camPermission.statusChanged()
     }
 
     function restart() {
@@ -162,4 +168,14 @@ Item {
         }, 300)
     }
 
+   CameraPermission{
+       id: camPermission
+        onStatusChanged: {
+            if(status !== Qt.Granted){
+                request()
+                return
+            }
+            mCamera.active=true
+        }
+   }
 }

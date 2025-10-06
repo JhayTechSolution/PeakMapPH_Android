@@ -2,3 +2,4 @@ module Com.Plm.PeakMapPH
 singleton PeakMapConfig 1.0 qrc:/qml/PeakMapConfig.qml
 singleton CoreType 1.0 qrc:/qml/network/graphql/CoreType.qml
 singleton GraphQLType 1.0 qrc:/qml/network/graphql/GraphQLType.qml
+singleton IconType 1.0 qrc:/qml/components/IconType.qml

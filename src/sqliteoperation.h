@@ -24,6 +24,14 @@ public:
     Q_INVOKABLE int count();
     Q_INVOKABLE void runQuery(QJSValue callback, bool sortDesc=false); // works with withField().filter().filterOr().limit().offset()
     bool fieldExist(QString field);
+    Q_INVOKABLE void instance(SQLiteOperation *ops);
+
+    SQLiteStorage *getDB();
+    SQLiteTable *getTable();
+    inline Q_INVOKABLE void clear(){
+        selectArgs=QJsonObject();
+    }
+
 private:
     SQLiteTable* table;
     SQLiteStorage* db;

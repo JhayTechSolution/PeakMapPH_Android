@@ -1,0 +1,53 @@
+{
+  "version": 8,
+  "id": "streets-green-land-gray-roads",
+  "name": "Streets Green Land Gray Roads",
+
+  "layers": [
+    {
+      "id": "background",
+      "type": "background",
+      "paint": {
+        "background-color": "green"
+      }
+    },
+    {
+      "id": "water",
+      "type": "fill",
+      "source": "openmaptiles",
+      "source-layer": "water",
+      "paint": {
+        "fill-color": "#aadaff"
+      }
+    },
+    {
+      "id": "roads",
+      "type": "line",
+      "source": "openmaptiles",
+      "source-layer": "transportation",
+      "paint": {
+        "line-color": "#888888",
+        "line-width": 1.5
+      }
+    }
+  ],
+  "sources": {
+    "maptiler_attribution": {
+      "attribution": "<a href=\"https://www.maptiler.com/copyright/\" target=\"_blank\">&copy; MapTiler</a> <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">&copy; OpenStreetMap contributors</a>",
+      "type": "vector"
+    },
+    "openmaptiles": {
+      "url": "https://api.maptiler.com/tiles/v3/tiles.json?key=eoyM2IVzVRfga9GPrIAW",
+      "type": "vector"
+    }
+  },
+  "metadata": {
+    "maptiler:copyright": "Generated on MapTiler Cloud"
+  },
+  "glyphs": "https://api.maptiler.com/fonts/{fontstack}/{range}.pbf?key=eoyM2IVzVRfga9GPrIAW",
+  "sprite": "https://api.maptiler.com/maps/streets/sprite",
+  "bearing": 0,
+  "pitch": 0,
+  "center": [0, 0],
+  "zoom": 1
+}

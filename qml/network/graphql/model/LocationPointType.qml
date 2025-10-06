@@ -4,15 +4,17 @@ CoreResponse{
 
     property CoreResponseMarker latitude: CoreResponseMarker{
         dataType: CoreType.floatType
-
+        include:true
     }
 
     property CoreResponseMarker longitude: CoreResponseMarker{
         dataType: CoreType.floatType
+        include:true
     }
 
     property CoreResponseMarker routeName: CoreResponseMarker{
         dataType: CoreType.stringType
+        include:true
 
     }
 

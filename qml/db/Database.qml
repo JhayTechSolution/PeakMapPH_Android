@@ -8,7 +8,10 @@ SQLiteDB{
 
     tables: [
         UserTable{},
-        PassengerRideLog{}
+        PassengerRideLog{},
+        LiveSpeedLocation{},
+        ReportedCongestion{},
+        AlertCongestion{}
     ]
     Component.onCompleted: {
         open()

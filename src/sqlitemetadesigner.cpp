@@ -311,6 +311,7 @@ QString SQLiteMetaDesigner::updateTableMeta(SQLiteTable *table){
 
 QString SQLiteMetaDesigner::selectTableMeta(SQLiteTable *table, QJsonObject selectArgs){
     QString commonSelect="SELECT %1 FROM %2";
+
     if(!selectArgs.contains("order")){
         selectArgs["order"]= QJsonObject{
                             {"by",table->getPrimaryKeyName()},
@@ -327,7 +328,7 @@ QString SQLiteMetaDesigner::selectTableMeta(SQLiteTable *table, QJsonObject sele
     };
 
     QList<QString> withFields{ "*" };
-
+    qDebug() << "Here";
     if (selectArgs.contains("selector")) {
         withFields = jsonArrayToStringList(selectArgs["selector"].toArray());
         if(withFields.length() == 0){
@@ -336,6 +337,7 @@ QString SQLiteMetaDesigner::selectTableMeta(SQLiteTable *table, QJsonObject sele
     }
     qDebug() << selectArgs;
     commonSelect = commonSelect.arg(withFields.join(",")).arg(table->getTableName());
+
     auto columns = table->getAllColumns();
     if(selectArgs.contains("filters")){
         QString where = " WHERE %1";
@@ -374,7 +376,9 @@ QString SQLiteMetaDesigner::selectTableMeta(SQLiteTable *table, QJsonObject sele
         }
         commonSelect = commonSelect +" "+where.arg(whereComplete);
     }
+    qDebug() << "HERE";
     QString commonOrder = QString(" ORDER BY %1 %2").arg(selectArgs["order"].toObject()["by"].toString()).arg(selectArgs["order"].toObject()["sort"].toString());
+    qDebug() << commonOrder;
     if(selectArgs.contains("limit")){
         commonOrder = commonOrder + QString(" LIMIT %1").arg(selectArgs["limit"].toInt());
         if(selectArgs.contains("offset")){
@@ -382,6 +386,8 @@ QString SQLiteMetaDesigner::selectTableMeta(SQLiteTable *table, QJsonObject sele
         }
 
     }
+
+    qDebug() << commonSelect+ commonOrder;
 
     return commonSelect + commonOrder;
 

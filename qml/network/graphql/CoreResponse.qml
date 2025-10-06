@@ -19,13 +19,18 @@ QtObject{
             || coreType === CoreType.floatType
             || coreType === CoreType.idType
             || coreType === CoreType.intType
+
         ){
             return true
         }
+
         return false
     }
+    function _isArray(coreType){
+        return coreType.startsWith("[") && coreType.endsWith("]")
+    }
 
-    function createResponse(){
+    function createResponse(nextLevel = false ){
         var responseProp = []
 
         var props = Object.keys(this)
@@ -39,11 +44,14 @@ QtObject{
                     }
 
 
-                    if(root._isCoreType(root[currentProp].dataType)){
-                        console.log(root[currentProp].dataType.toString())
-                        responseProp.push(currentProp)
+                    if(!root._isCoreType(root[currentProp].dataType)){
+                        var resultObject = root[currentProp].resultObject;
+                        console.log(currentProp, resultObject.createResponse() );
+                        responseProp.push("%1%2".arg(currentProp).arg(root[currentProp].resultObject.createResponse(true)))
                     }else{
-                        responseProp.push("%1%2".arg(currentProp).arg(root[currentProp].resultObject.createResponse()))
+
+                            responseProp.push(currentProp)
+
                     }
                 }
             }
@@ -59,12 +67,28 @@ QtObject{
             for(var i=0; i < props.length; i++){
                 var currentProp = props[i]
                 if(root._isMarker(currentProp)){
-                    if(root._isCoreType(root[currentProp].dataType)){
+                    var dt = root[currentProp].dataType.replace("!","")
+                    if(root[currentProp].include){
+                    if(root._isCoreType(dt)){
                         root[currentProp].value = data[currentProp]
+                    }else if(root._isArray(dt)){
+                         dt = dt.replace("[","").replace("]","")
+                        var value = data[currentProp]
+                        root[currentProp].value = []
+                        for(var x=0; x < value.length; x++){
+                            if(root[currentProp].include){
+                            if(root._isCoreType(dt)){
+                                root[currentProp].value.push(value[x])
+                            }else{
 
+                                var obj = root[currentProp].resultObject.parse(value[x])
+                                root[currentProp].value.push(obj)
+                            }
+                            }
+                        }
                     }else{
-                        console.log('NOT A CORETYPE ', JSON.stringify(data[currentProp]), currentProp , root[currentProp].resultObject)
-                         root[currentProp].value = root[currentProp].resultObject.parse(data[currentProp])
+                          root[currentProp].value = root[currentProp].resultObject.parse(data[currentProp])
+                    }
                     }
                 }
             }

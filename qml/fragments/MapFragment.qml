@@ -1,45 +1,144 @@
-import QtQuick 2.15
+import QtQuick
 import QtPositioning
-import QtLocation 5.15
-import Felgo
-AppMap {
+import QtLocation
+import QtQuick.Controls
+
+import Qt5Compat.GraphicalEffects
+Map{
+
+    Item{
+        id: justMask
+        anchors.fill: parent
+    }
+
+    PinchHandler {
+
+        id: pinch
+        target: justMask // target your map item directly
+
+         onScaleChanged: (delta) => {
+             map.zoomLevel += Math.log2(delta)
+         }
+
+
+
+    }
+
+    DragHandler {
+        id: drag
+        target: null
+        onTranslationChanged: (delta) => map.pan(-delta.x, -delta.y)
+    }
+    enum MapType{
+        Normal,
+        HeatMap
+    }
+    property int mapType : MapFragment.MapType.Normal
+    onMapTypeChanged: {
+        if(mapType === MapFragment.MapType.HeatMap){
+            pluginMap.value = "qrc:/assets/mapstyle.json"
+        }else{
+            pluginMap.value = "https://api.maptiler.com/maps/streets/style.json?key=eoyM2IVzVRfga9GPrIAW"
+        }
+        pluginMap.initialized()
+    }
+
+    function lonToTileX(lon) {
+        return Math.floor(((lon + 180) / 360) * Math.pow(2, zoomLevel));
+    }
+
+    function latToTileY(lat) {
+        const rad = lat * Math.PI / 180;
+        return Math.floor(
+            (1 - Math.log(Math.tan(rad) + 1 / Math.cos(rad)) / Math.PI) / 2 * Math.pow(2, zoomLevel)
+        );
+    }
+
     id: map
     anchors.fill: parent
     plugin: Plugin {
-           name: "maplibregl"
+           name: "maplibre"
            // configure your styles and other parameters here
            parameters: [
              PluginParameter {
-               name: "maplibregl.mapping.additional_style_urls"
-               value: "https://api.maptiler.com/maps/streets/style.json?key=eoyM2IVzVRfga9GPrIAW"
+                id: pluginMap
+
+               name: "maplibre.map.styles"
+               value:{
+                   console.log("MAPTYPE ",map.mapType)
+                   if(map.mapType === MapFragment.MapType.HeatMap) {
+                       console.log("MAPTYPE HEATMAP")
+                       return "qrc:/assets/mapstyle.json"
+                   }
+
+                  return "https://api.maptiler.com/maps/streets/style.json?key=eoyM2IVzVRfga9GPrIAW"
+               }
+
              }
-           ]
-         }
-    center: QtPositioning.coordinate(14.5995, 120.9842)
-    zoomLevel:12
-
-
-    /*
-    // Sample heatmap data points
-    ListModel {
-        id: heatmapData
-        ListElement { lat: 14.5995; lon: 120.9842; intensity: 0.8 }
-        ListElement { lat: 14.6040; lon: 120.9820; intensity: 0.6 }
-        ListElement { lat: 14.5980; lon: 120.9900; intensity: 0.9 }
-        // Add more data points...
+         ]
     }
+    center: QtPositioning.coordinate(14.5995, 120.9842)
 
-    // Render circles for each data point
-    Repeater {
-        model: heatmapData
-        MapCircle {
-            center: QtPositioning.coordinate(model.lat, model.lon)
-            radius: 300 // in meters
-            color: Qt.rgba(1, 0, 0, model.intensity) // red with alpha based on intensity
-            border.width: 0
+
+    property var rasterData: []
+    Repeater{
+        model: rasterData
+        MapQuickItem{
+            sourceItem: Image{
+                source: tomTomUrl.arg(modelData.zoomLevel).arg(modelData.tileX).arg(modelData.tileY).arg(apiKey)
+            }
+            Component.onCompleted: {
+                addMapItem(this)
+                console.log('adding this item')
+            }
         }
     }
-    */
+
+    Component{
+        id: raster
+        MapQuickItem{
+            property string imageUrl
+            sourceItem: Image{
+                id: rasterImage
+                source: imageUrl
+
+            }
+        }
+    }
+
+    zoomLevel:12
+
+    property var heatMapPoints: []// {congestion, target}
+    onHeatMapPointsChanged: {
+        heatMapView.model = []
+        heatMapView.model = heatMapPoints
+    }
+
+
+    MapItemView{
+        id: heatMapView
+        delegate:  HeatMapCloud{
+            mapZoomLevel:  map.zoomLevel
+            coordinate: QtPositioning.coordinate(modelData.target.latitude, modelData.target.longitude)
+            congestionLevel: (modelData.congestion.toLowerCase() === "medium")? HeatMapCloud.CongestionLevel.MEDIUM:
+                             (modelData.congestion.toLowerCase() === "high")?
+                                                                            HeatMapCloud.CongestionLevel.HIGH:
+                                                                            HeatMapCloud.CongestionLevel.LOW
+            id: heatmap
+            Connections{
+                target:  map
+                function onZoomLevelChanged(zoomLvel){
+                    console.log('zoom level changed')
+                    heatmap.zoomLevelChange(map)
+                }
+                function onCenterChanged(coordinate){
+                    heatmap.centerChange(map)
+                }
+
+             }
+        }
+    }
+
     property var pins : []
     function getExistingPin(routeName){
         for(var i=0; i  < pins.length; i++){
@@ -103,10 +202,11 @@ AppMap {
                 width:30
                 height: 30
             }
-            AppToolTip{
-                anchors.fill: parent
+            ToolTip{
                 text: routeName
             }
         }
     }
+
+
 }

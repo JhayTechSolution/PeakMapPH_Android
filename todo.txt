@@ -1,0 +1,4 @@
+1. New heatmap model
+2. Drivers  login
+3. Run on background
+4. GetHeatMap on application when start to get the current heatmap situation

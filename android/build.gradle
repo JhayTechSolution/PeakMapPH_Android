@@ -5,26 +5,20 @@ buildscript {
     }
 
     dependencies {
-        classpath "com.android.tools.build:gradle:${androidGradleToolsVersion}"
+        classpath 'com.android.tools.build:gradle:8.4.1'
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://install.felgo.com/maven/' }
-    }
+repositories {
+    google()
+    mavenCentral()
 }
 
 apply plugin: 'com.android.application'
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
-    implementation "androidx.appcompat:appcompat:1.2.0"
-
-
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+    implementation 'androidx.core:core:1.10.1'
 }
 
 android {
@@ -32,7 +26,7 @@ android {
      * The following variables:
      * - androidBuildToolsVersion,
      * - androidCompileSdkVersion
-     * - qt5AndroidDir - holds the path to qt android files
+     * - qtAndroidDir - holds the path to qt android files
      *                   needed to build any Qt application
      *                   on Android.
      *
@@ -40,53 +34,49 @@ android {
      * updated by QtCreator and androiddeployqt tools.
      * Changing them manually might break the compilation!
      *******************************************************/
+    namespace "com.plm.PeakMapPHApp"
+    compileSdkVersion androidCompileSdkVersion
+    buildToolsVersion "36.0.0"
+    ndkVersion androidNdkVersion
 
-    namespace            androidPackageName
-    
-    compileSdkVersion    androidCompileSdkVersion.toInteger()
-    buildToolsVersion    androidBuildToolsVersion
-
-    compileOptions {
-      sourceCompatibility 1.8
-      targetCompatibility 1.8
-    }
-
-    defaultConfig {
-      multiDexEnabled true
-      targetSdkVersion   androidCompileSdkVersion.toInteger()
-      applicationId    = productIdentifier
-      versionCode      = productVersionCode.toInteger()
-      versionName      = productVersionName
-      minSdkVersion    = project.hasProperty("qtMinSdkVersion") ? qtMinSdkVersion.toInteger() : 23
-
-    }
+    // Extract native libraries from the APK
+    packagingOptions.jniLibs.useLegacyPackaging true
 
     sourceSets {
         main {
             manifest.srcFile 'AndroidManifest.xml'
-            java.srcDirs = [qt5AndroidDir + '/src', 'src', 'java']
-            aidl.srcDirs = [qt5AndroidDir + '/src', 'src', 'aidl']
-            res.srcDirs = [qt5AndroidDir + '/res', 'res']
-            resources.srcDirs = ['src']
+            java.srcDirs = [qtAndroidDir + '/src', 'src', 'java']
+            aidl.srcDirs = [qtAndroidDir + '/src', 'src', 'aidl']
+            res.srcDirs = [qtAndroidDir + '/res', 'res']
+            resources.srcDirs = ['resources']
             renderscript.srcDirs = ['src']
             assets.srcDirs = ['assets']
             jniLibs.srcDirs = ['libs']
        }
     }
 
-    lintOptions {
-        abortOnError false
-    }
-    aaptOptions { // Do not compress Qt binary resources file
-        noCompress 'rcc'
-    }
     tasks.withType(JavaCompile) {
         options.incremental = true
     }
-    packagingOptions {
-        jniLibs {
-            useLegacyPackaging = true
-        }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+
+    // Do not compress Qt binary resources file
+    aaptOptions {
+        noCompress 'rcc'
+    }
+
+    defaultConfig {
+        resConfig "en"
+        minSdkVersion 26
+        targetSdkVersion 36
+        ndk.abiFilters = qtTargetAbiList.split(",")
     }
 }
-

@@ -248,4 +248,21 @@ void SQLiteOperation::runQuery(QJSValue callback, bool sortDesc){
 }
 
 
+void SQLiteOperation::instance(SQLiteOperation *ops){
+    if(!ops){
+        throw new std::runtime_error("Unable to use the table for operation");
+    }
+
+    this->table = ops->getTable();
+    this->db= ops->getDB();
+}
+
+
+SQLiteTable *SQLiteOperation::getTable(){
+    return this->table;
+}
+
+SQLiteStorage *SQLiteOperation::getDB(){
+    return this->db;
+}
 

@@ -10,15 +10,32 @@ Popup{
         color:"#80FFFFFF"
     }
     id: root
-    BusyIndicator{
+    Item{
         anchors.centerIn: parent
         width: 40
         height: 40
-        layer.enabled: true
-        layer.effect: ColorOverlay{
-            color:"white"
-        }
-        running : root.visible
+        id:indicator
+    }
 
+    Component{
+        id: busyIndicator
+        BusyIndicator{
+            width: 40
+            height: 40
+            layer.enabled: true
+            layer.effect: ColorOverlay{
+                color:"white"
+            }
+            running:true
+        }
+    }
+    property var indicatorData
+    onAboutToShow: {
+       indicatorData= busyIndicator.createObject(indicator)
+    }
+    onClosed: {
+        indicatorData.destroy()
+        indicatorData = null
+        indicator.children =""
     }
 }

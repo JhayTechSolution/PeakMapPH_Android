@@ -53,6 +53,7 @@ public:
     void componentComplete() override{}
     Q_INVOKABLE SQLiteOperation* useTable(QString tableName);
     void init();
+
 signals:
     void dbOpen();
     void dbClosed();

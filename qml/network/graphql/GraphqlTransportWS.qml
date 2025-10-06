@@ -1,9 +1,7 @@
 import QtQuick 2.15
 import QtWebSockets
-import "../../"
 WebSocket{
     requestedSubprotocols :["graphql-transport-ws"]
-    url:PeakMapConfig.backend_api.replace("http://","ws://").replace("https://","wss://")
     active: false
     property int lastId: 0
     property var callbacks: [] // {id,callback}

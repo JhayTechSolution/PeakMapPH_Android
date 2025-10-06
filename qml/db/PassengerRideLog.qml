@@ -3,53 +3,45 @@ import QtQuick 2.15
 import Com.Plm.PeakMapPH 1.0
 SQLiteTable{
     id: root
-   property SQLiteProperty uid: SQLiteProperty{
+   property SQLiteProperty rideId: SQLiteProperty{
         dataType: SQLite.INTEGER
         isPrimaryKey: true
         isAutoIncrement: true
 
    }
-   property SQLiteProperty uniqueId :SQLiteProperty{
-        dataType: SQLite.TEXT
-        nullable: false
-   }
-
-   property SQLiteProperty busName: SQLiteProperty{
-        dataType: SQLite.TEXT
-        nullable:true
-
-   }
    property SQLiteProperty busId: SQLiteProperty{
-        dataType: SQLite.INTEGER
-        nullable:true
-        defaultValue: -1
-    }
+       dataType: SQLite.TEXT
 
-   property SQLiteProperty createdAt: SQLiteProperty{
-        dataType: SQLite.INTEGER
-        defaultValue: "(datetime('now'))"
-        nullable:false
    }
-   property SQLiteProperty updatedAt: SQLiteProperty{
+   property SQLiteProperty active: SQLiteProperty{
         dataType: SQLite.INTEGER
     }
-    property SQLiteProperty deletedAt: SQLiteProperty{
-        dataType:SQLite.INTEGER
+    property SQLiteProperty busLatitude: SQLiteProperty {
+        dataType: SQLite.REAL
+    }
+    property SQLiteProperty busLongitude: SQLiteProperty {
+        dataType: SQLite.REAL
     }
 
-    property SQLiteProperty deleted: SQLiteProperty{
+    property SQLiteProperty createdAt: SQLiteProperty {
         dataType: SQLite.INTEGER
-        defaultValue: 0
     }
-
-    keys: [
-        SQLiteForeignKey{
-            columns: [root.uniqueId]
-            referenceTable: UserTable{
-                id:uTable
-            }
-            referenceColumns: [uTable.uniqueId]
-
-        }
-    ]
+    property SQLiteProperty createdKey: SQLiteProperty{
+        dataType: SQLite.TEXT
+    }
+    property SQLiteProperty busName: SQLiteProperty{
+        dataType: SQLite.TEXT
+    }
+    property SQLiteProperty maxCapacity: SQLiteProperty{
+        dataType: SQLite.INTEGER
+    }
+    property SQLiteProperty currentLoad: SQLiteProperty{
+        dataType: SQLite.INTEGER
+    }
+    property SQLiteProperty congestionLevel: SQLiteProperty{
+        dataType:SQLite.TEXT
+    }
+    property SQLiteProperty routeName : SQLiteProperty{
+        dataType :SQLite.TEXT
+    }
 }

@@ -1,8 +1,14 @@
 import QtQuick
-import Felgo
 import QtQuick.Layouts
 import QtQuick.Controls
+import Com.Plm.PeakMapPH 1.0
+import "../"
+import "../db"
+import "../components"
 Item {
+    function refreshAlerts(){
+       readAlerts()
+    }
 
     id: item
     Flickable{
@@ -41,92 +47,48 @@ Item {
                 font.pixelSize: 18
                 color:"white"
             }
-            Rectangle{
-                Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                color:"#2c2f36" //correct?
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 8
-                radius: 8
-            }
-
-            RowLayout{
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 8
-                Rectangle{
-                    Layout.preferredWidth: 40
-                    Layout.preferredHeight: 40
-                    radius: 4
-                    color:"#353940"
-                    AppIcon{
-                        iconType: IconType.bello
-                        color:"white"
-                        anchors.centerIn: parent
-
+            Repeater{
+                id:congestionLive
+                model: []
+                delegate: RowLayout{
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 24
+                    Layout.rightMargin: 24
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 8
+                    Rectangle{
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        radius: 4
+                        color:"#353940"
+                        AppIcon{
+                            iconType: IconType.bello
+                            color:"white"
+                            anchors.centerIn: parent
+                        }
+                    }
+                    ColumnLayout{
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 8
+                        Layout.alignment: Qt.AlignVCenter
+                        Text{
+                            property var level: modelData.level
+                            text: "%1 Congestion Alert".arg( level[0].toUpperCase() + level.slice(1).toLowerCase())
+                            color:"white"
+                            font.weight: 600
+                        }
+                        Text{
+                            text:"Potential Bottleneck detected on %1".arg(modelData.routeName)
+                            color:"#d8d8d8"
+                            font.pixelSize: 14
+                        }
                     }
 
-                }
-                ColumnLayout{
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.alignment: Qt.AlignVCenter
-                   Text{
-                       text:"High Congestion Alert"
-                       font.pixelSize: 16
-                       color:"white"
-                       font.weight: 600
-                   }
-                   Text{
 
-                       text:"Potential Bottleneck detected on Route 101"
-                       color:"#d8d8d8"
-                       font.pixelSize: 14
-                   }
                 }
-            }
-            Item{
-                Layout.preferredHeight: 8
+
             }
 
-            RowLayout{
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 8
-                Rectangle{
-                    Layout.preferredWidth: 40
-                    Layout.preferredHeight: 40
-                    radius: 4
-                    color:"#353940"
-                    AppIcon{
-                        iconType: IconType.bello
-                        color:"white"
-                        anchors.centerIn: parent
-
-                    }
-
-                }
-                ColumnLayout{
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.alignment: Qt.AlignVCenter
-                   Text{
-                       text:"Medium Congestion Alert"
-                       font.pixelSize: 16
-                       color:"white"
-                       font.weight: 600
-                   }
-                   Text{
-
-                       text:"Potential Bottleneck detected on Route 202"
-                       color:"#d8d8d8"
-                       font.pixelSize: 14
-                   }
-                }
-            }
 
             Text{
                 text:"Historical Alert Logs"
@@ -138,86 +100,105 @@ Item {
                 Layout.leftMargin: 24
 
             }
-            RowLayout{
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 8
-                Rectangle{
-                    Layout.preferredWidth: 40
-                    Layout.preferredHeight: 40
-                    radius: 4
-                    color:"#353940"
-                    AppIcon{
-                        iconType: IconType.bello
-                        color:"white"
-                        anchors.centerIn: parent
 
+            Repeater{
+                id: historicalAlertLogs
+                model: []
+                delegate: RowLayout{
+                    Layout.fillWidth: true
+                    Layout.leftMargin: 24
+                    Layout.rightMargin: 24
+                    Layout.topMargin: 8
+                    Layout.bottomMargin: 8
+                    Rectangle{
+                        Layout.preferredWidth: 40
+                        Layout.preferredHeight: 40
+                        radius: 4
+                        color:"#353940"
+                        AppIcon{
+                            iconType: IconType.bello
+                            color:"white"
+                            anchors.centerIn: parent
+                        }
+                    }
+                    ColumnLayout{
+                        Layout.fillWidth: true
+                        Layout.leftMargin: 8
+                        Layout.alignment: Qt.AlignVCenter
+                        Text{
+                            property string level: modelData.level
+                            text:"%1 Congestion Alert".arg(level[0].toUpperCase() + level.slice(1).toLowerCase())
+                            font.pixelSize: 16
+                            color:"white"
+                            font.weight: 600
+                        }
+                        Text{
+                            text:"Congestion on %1".arg(modelData.routeName)
+                            color:"#d8d8d8"
+                            font.pixelSize: 14
+                        }
                     }
 
                 }
-                ColumnLayout{
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.alignment: Qt.AlignVCenter
-                   Text{
-                       text:"High Congestion Alert"
-                       font.pixelSize: 16
-                       color:"white"
-                       font.weight: 600
-                   }
-                   Text{
-
-                       text:"Congestion on Route 101"
-                       color:"#d8d8d8"
-                       font.pixelSize: 14
-                   }
-                }
-            }
-            Item{
-                Layout.preferredHeight: 8
             }
 
-            RowLayout{
-                Layout.fillWidth: true
-                Layout.leftMargin: 24
-                Layout.rightMargin: 24
-                Layout.topMargin: 8
-                Rectangle{
-                    Layout.preferredWidth: 40
-                    Layout.preferredHeight: 40
-                    radius: 4
-                    color:"#353940"
-                    AppIcon{
-                        iconType: IconType.bello
-                        color:"white"
-                        anchors.centerIn: parent
-
-                    }
-
-                }
-                ColumnLayout{
-                    Layout.fillWidth: true
-                    Layout.leftMargin: 8
-                    Layout.alignment: Qt.AlignVCenter
-                   Text{
-                       text:"Medium Congestion Alert"
-                       font.pixelSize: 16
-                       color:"white"
-                       font.weight: 600
-                   }
-                   Text{
-
-                       text:"Congestion on Route 202"
-                       color:"#d8d8d8"
-                       font.pixelSize: 14
-                   }
-                }
-            }
 
         }
 
 
     }
 
+    AlertCongestion{
+        id: alertCongestion
+    }
+    function readHistorical(startOnZero){
+        ops.clear()
+        ops.withField([
+                      alertCongestion.routeName.columnName,
+                      alertCongestion.level.columnName
+                      ])
+        ops.orderBy(alertCongestion.createdAt.columnName)
+         ops.limit(20)
+        if(startOnZero){
+            ops.offset(0)
+        }else{
+             ops.offset(5);
+        }
+        ops.runQuery((data)=>{
+            console.log('MODEL DATA ',JSON.stringify(data))
+            historicalAlertLogs.model = []
+            historicalAlertLogs.model = data
+        }, true )
+    }
+
+    function readAlerts(){
+        ops.instance(PeakMapConfig.db.useTable(alertCongestion.tableName))
+        ops.withField([alertCongestion.routeName.columnName,
+                      alertCongestion.level.columnName
+                      ])
+        ops.filter({
+           "createdKey" : PeakMapConfig.formatDateNow()
+
+        })
+        ops.orderBy(alertCongestion.createdAt.columnName);
+        ops.limit(5)
+        ops.offset(0)
+         ops.runQuery((data)=>{
+             congestionLive.model = []
+             congestionLive.model = data
+            readHistorical()
+
+
+        }, true)
+        ops.clear()
+
+
+    }
+    Component.onCompleted: {
+        readAlerts()
+    }
+
+    SQLiteOperation{
+        id: ops
+    }
 }

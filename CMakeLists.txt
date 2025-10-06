@@ -3,11 +3,18 @@ cmake_minimum_required(VERSION 3.16)
 project(PeakMapPHApp VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(QMapLibre_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/QMapLibre")
+find_package(Qt6 REQUIRED COMPONENTS Positioning Location Multimedia Sql  Concurrent WebSockets Charts Quick )
+#find_package(FelgoHotReload REQUIRED COMPONENTS Multimedia Positioning Location Charts Quick)
 
-find_package(Felgo REQUIRED COMPONENTS Positioning Location Multimedia Sql QPSQLDriverPlugin Concurrent Qt6WebSockets)
-find_package(FelgoHotReload REQUIRED COMPONENTS Multimedia Positioning Location )
+
+
+find_package(QMapLibre COMPONENTS Location REQUIRED)
 add_definitions(-DQZXING_QML -DENABLE_ENCODER_GENERIC)
+find_package(Qt6 REQUIRED COMPONENTS Charts Quick)
+find_package(Qt6Sql REQUIRED Qt6QSQLiteDriverPlugin)
 set(QZXING_QML ON)
 set(QZXING_MULTIMEDIA ON )
 #include(cmake/FindQZxing.cmake)
@@ -42,18 +49,27 @@ file(GLOB_RECURSE SrcFiles RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}  src/*.cpp src/*
 set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/qml/PeakMapConfig.qml"
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/network/graphql/CoreType.qml"
     "${CMAKE_CURRENT_SOURCE_DIR}/qml/network/graphql/GraphQLType.qml"
+    "${CMAKE_CURRENT_SOURCE_DIR}/qml/components/IconType.qml"
     PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
 set_source_files_properties("./qml/qmldir" PROPERTIES ALIAS "/Com/Plm/PeakMapPH/qmldir")
 qt_add_executable(appPeakMapPHApp
     main.cpp
     ${SrcFiles}
+  #  design.qrc
 )
 if(ANDROID)
+
+    include(${ANDROID_SDK_ROOT}/android_openssl/android_openssl.cmake)
+    add_android_openssl_libraries(appPeakMapPHApp)
     set(QZXing ${CMAKE_CURRENT_SOURCE_DIR}/libraries/qzxing/android/${CMAKE_ANDROID_ARCH_ABI}/libQZXing.so)
     set_target_properties(appPeakMapPHApp PROPERTIES
           QT_ANDROID_EXTRA_LIBS
           ${QZXing}
       )
+
+
+  set_property(TARGET appPeakMapPHApp APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/android)
+
 ELSE()
 set(QZXing ${CMAKE_CURRENT_SOURCE_DIR}/libraries/qzxing/linuxdesktop/libQZXing.so)
 
@@ -62,11 +78,18 @@ target_include_directories(appPeakMapPHApp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/l
 message(${QZXing})
 target_link_libraries(appPeakMapPHApp PRIVATE
     ${QZXing}
-FelgoHotReload
+     Qt6::Charts
+     Qt6::Quick
+    Qt6::Positioning
+    Qt6::Location
+    Qt6::WebSockets
+    Qt6::Multimedia
+    Qt6::Sql
+    QMapLibre::Location
 )
 
-
-felgo_configure_executable(appPeakMapPHApp)
+qmaplibre_location_setup_plugins(appPeakMapPHApp)
+#felgo_configure_executable(appPeakMapPHApp)
 
 qt_add_qml_module(appPeakMapPHApp
     URI PeakMapPHApp
@@ -77,9 +100,8 @@ qt_add_qml_module(appPeakMapPHApp
     NO_RESOURCE_TARGET_PATH
 )
 
-
 target_compile_definitions(appPeakMapPHApp
     PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
 
-target_link_libraries(appPeakMapPHApp PRIVATE Felgo)
+#target_link_libraries(appPeakMapPHApp PRIVATE Felgo)
 target_include_directories(appPeakMapPHApp PRIVATE ./src)

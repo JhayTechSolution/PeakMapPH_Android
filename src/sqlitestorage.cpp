@@ -86,6 +86,7 @@ QJsonArray SQLiteStorage::getQuery(const QString &queryStr) {
         qDebug() << "Query error:" << q.lastError().text();
         return {};
     }
+    qDebug() << " DB PART " << queryStr;
 
     return queryToJson(q);
 }

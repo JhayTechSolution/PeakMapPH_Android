@@ -6,4 +6,7 @@ QtObject{
     property string boolType:"Boolean"
     property string floatType:"Float"
     property string idType:"ID"
+    function arrayOf(coreType){
+        return "["+coreType+"]"
+    }
 }

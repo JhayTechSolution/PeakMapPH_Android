@@ -9,10 +9,12 @@ QtObject{
     property string graphqlType: GraphQLType.queryType
     id: root
     signal delegateReturn(var item)
+    signal arrayReturn(var array)
     function createQuery(){
 
         var res = "";
         if(!noReturnObject){
+            console.log(methodName)
             res = queryResponse.createResponse()
         }
 
@@ -40,7 +42,6 @@ QtObject{
         }
         let transport = PeakMapConfig.gtransport
         transport.subscribe(body, methodName, (m, data)=>{
-                                console.log("RETURNED DATA", JSON.stringify(data))
                                 if(root.dataItem !==null){
                                     if(Array.isArray(data)){
                                         for(var i=0; i < data.length; i++){
@@ -49,6 +50,7 @@ QtObject{
                                              comp.parse(current)
                                             delegateReturn(comp)
                                         }
+                                        arrayReturn(data)
                                     }else{
                                         var c=dataItem.createObject()
                                         c.parse(data)
@@ -56,6 +58,8 @@ QtObject{
                                     }
 
                                 }
+                                arrayReturn(data)
+
         })
     }
 
@@ -72,7 +76,6 @@ QtObject{
 
            xhr.onreadystatechange = function() {
                if (xhr.readyState === XMLHttpRequest.DONE) {
-                   console.log(xhr.status , xhr.responseText)
                    if (xhr.status === 200) {
                        var json =JSON.parse(xhr.responseText)
 
@@ -86,8 +89,9 @@ QtObject{
                                        var current = data[i]
                                         var comp = dataItem.createObject()
                                         comp.parse(current)
-                                        console.log(JSON.stringify(comp))
+                                       delegateReturn(comp)
                                    }
+                                   arrayReturn(data)
                                }else{
                                    var c=dataItem.createObject()
                                    c.parse(data)
@@ -112,6 +116,7 @@ QtObject{
                query: createQuery(),  // <-- the query string
                variables: hasInput ? queryInput.createInput() : {} // optional
            };
+           console.log(JSON.stringify(body))
 
            xhr.send(JSON.stringify(body).trim("\n"));   // send as JSON
        }

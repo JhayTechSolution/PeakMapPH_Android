@@ -1,5 +1,5 @@
 import QtQuick
-import Felgo
+import "../components"
 import QtQuick.Layouts
 import QtQuick.Controls
 import QtLocation
@@ -10,12 +10,39 @@ import "../network/graphql/service"
 import "../network/graphql"
 import "../network/graphql/model"
 import "../"
-
+import QtCharts
+import "../db"
+import Com.Plm.PeakMapPH 1.0
 Item{
-    function sendBusActivity(busId, location , congestionLevel){
-        console.log("PINNING ", busId, JSON.stringify(location), congestionLevel)
-        map.addPin(location.latitude, location.longitude, busId ,congestionLevel)
+    function startLoad(){
+
+
+        ga.analyticsType="PeakHours"
+        ga.timeRange = "Daily"
+        ga.sendRequest((s,e)=>{})
+        getCurrentBusIfAny()
+        ghm.sendRequest((s,e)=>{})
+        gtba.sendRequest((s,e)=>{})
+
     }
+
+    signal updateAlerts()
+    property bool hasBus: false
+    property string busId: ""
+    property real currentBusLatitude
+    property real currentBusLongitude
+    function sendBusActivity(busId, location , congestionLevel){
+        map.addPin(location.latitude, location.longitude, busId ,congestionLevel)
+        ga.sendRequest({})
+    }
+    function sendLoadRank(loadRankModel){
+        loadRank=[]
+        loadRank= loadRankModel
+        ga.sendRequest({})
+    }
+
+    property var loadRank: []
+
     Flickable{
         anchors.fill: parent
         clip:true
@@ -30,6 +57,7 @@ Item{
                 Layout.rightMargin: 10
                 radius: 8
                 id: littleMapContainer
+                clip:true
                 MapFragment{
                     id: map
                     anchors.fill: parent
@@ -54,7 +82,7 @@ Item{
             }
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 120
+                Layout.preferredHeight: 160
                 visible: routeBus.model.length === 0
 
                 Rectangle {
@@ -85,7 +113,7 @@ Item{
                             anchors.horizontalCenter: parent.horizontalCenter
 
                             AppIcon{
-                                iconType: IconType.qrcode
+                                iconType: IconType.qrCode
                                 size: 24
                                 color: "white"
                             }
@@ -200,7 +228,7 @@ Item{
                         anchors.centerIn: parent
 
                         AppIcon{
-                            iconType: IconType.qrcode
+                            iconType: IconType.qrCode
                             size: 24
                             color: "white"
                         }
@@ -330,6 +358,12 @@ Item{
                 Layout.leftMargin:10
                 Layout.rightMargin: 10
                 radius: 8
+                clip: true
+                id:  mCongestion
+                MapFragment{
+                    id: heatmapType
+                    mapType: MapFragment.MapType.HeatMap
+                }
             }
 
             Text{
@@ -349,7 +383,7 @@ Item{
                 Layout.leftMargin:10
             }
             Text{
-                text:"100%"
+                text:"%1%".arg(chartScreen.change)
                 font.pixelSize: 40
                 color:"white"
                 Layout.leftMargin: 10
@@ -357,7 +391,9 @@ Item{
             }
 
             Text{
-                text:"Last 7 Days + <m style='color:green'>10%</m>"
+                id: last7days
+                text: "Last 7 days <m style='color:%1'>%2%</m>".arg(chartScreen.indicatorColor).arg(chartScreen.change)
+
                 textFormat: Text.MarkdownText
                 color:"#686868"
                 Layout.leftMargin: 10
@@ -367,6 +403,25 @@ Item{
             Item{
                 Layout.fillWidth: true
                 Layout.preferredHeight: 250
+                Layout.leftMargin: 10
+                Layout.rightMargin: 10
+
+                ChartScreen{
+                    id: chartScreen
+
+                    property int change
+
+                    property string indicatorColor: (change < 0) ? "#FF073A": "#39FF14"
+
+                    hasLabelY: false
+                    gridLinesColor: "#00000000"
+                    dataBackgroundColor: "#585858"
+                    dataBorderColor: "#FFFFFF"
+                    chartStyle: ChartScreen.ChartType.Line
+                    dataSets: [
+                    [0,0,0,0,0,0,0]
+                    ]
+                }
             }
 
             Text{
@@ -378,9 +433,7 @@ Item{
                 font.weight: 700
             }
             Repeater{
-                model:[{"station":"A", "passenger":10},
-                {"station":"B", "passenger":8},
-                {"station":"C","passenger":5}]
+                model: loadRank
                 delegate:RowLayout{
 
                     Rectangle{
@@ -404,13 +457,13 @@ Item{
                         spacing:0
                         Layout.alignment: Qt.AlignVCenter
                         Text{
-                            text:"Station %1".arg(modelData.station)
+                            text:"Station %1".arg(modelData.stationName)
                             font.pixelSize: 16
                             color:"white"
                             font.weight: 500
                         }
                         Text{
-                            text:"%1 Passengers".arg(modelData.passenger)
+                            text:"%1 Passengers".arg(modelData.passengerCount)
                             font.pixelSize: 14
                             color:"#686868"
                             font.weight: 400
@@ -421,11 +474,109 @@ Item{
         }
     }
 
+    function checkExist(busId, callback ){
+        sqliteOps.instance(PeakMapConfig.db.useTable(prl.tableName))
+        let filters = {}
+        filters[prl.createdKey.columnName] = PeakMapConfig.formatDateNow()
+        sqliteOps.filter(filters)
+        sqliteOps.orderBy(prl.createdAt.columnName)
+        sqliteOps.runQuery((data)=>{
+             callback(data, sqliteOps)
+        }, true)
 
+    }
+
+    function processBusData(data){
+
+        var busId = data[prl.busId.columnName]
+        var maxPassengers = data[prl.maxCapacity.columnName]
+        var currentPassengers = data[prl.currentLoad.columnName]
+        var busName  = data[prl.busName.columnName]
+        var routeNae = data[prl.routeName.columnName]
+        var level = data[prl.congestionLevel.columnName]
+        var busLatitude = data[prl.busLatitude.columnName]
+        var busLongitude = data[prl.busLongitude.columnName]
+        checkExist(busId, (existData, sqliteOps)=>{
+            var busData= {}
+            let shouldUpdate = false
+            if(existData.length > 0 ){
+                busData= existData[0]
+                shouldUpdate=true
+            }else{
+                busData[prl.busId.columnName] = busId
+                busData[prl.active.columnName] = true
+                busData[prl.busName.columnName] = busName
+                busData[prl.createdAt.columnName] = Date.now()
+                busData[prl.createdKey.columnName] = PeakMapConfig.formatDateNow()
+
+            }
+            busData[prl.maxCapacity.columnName] = maxPassengers
+            busData[prl.currentLoad.columnName] = currentPassengers
+            busData[prl.busLatitude.columnName] = busLatitude
+            busData[prl.busLongitude.columnName] = busLongitude
+            busData[prl.congestionLevel.columnName] = level
+            busData[prl.routeName.columnName] = routeNae
+            sqliteOps.clear()
+
+            if(shouldUpdate){
+                sqliteOps.update(busData)
+            }else{
+                sqliteOps.insert(busData)
+            }
+            registerBusToApp(busData)
+        })
+
+    }
+
+
+
+
+    function registerBusToApp(data){
+
+
+        busActivity.busId = data[prl.busId.columnName]
+        routeBus.model =[]
+        routeBus.model= [
+            {
+                "bus": data[prl.busName.columnName],
+                "route":data[prl.routeName.columnName]
+            }
+        ]
+        numPassenger.passenger =data[prl.currentLoad.columnName]
+        loadBar.maxPassenger = data[prl.maxCapacity.columnName]
+        loadBar.currentPassenger =  data[prl.currentLoad.columnName]
+        loadBar.congestionLevel = data[prl.congestionLevel.columnName]
+        var latitude = data[prl.busLatitude.columnName]
+        var longitude = data[prl.busLongitude.columnName]
+        map.addPin(latitude, longitude, busActivity.busId, loadBar.congestionLevel)
+        hasBus=true
+        console.log("BUS ID ", JSON.stringify(data))
+        busId  = busActivity.busId
+        currentBusLatitude = latitude
+        currentBusLongitude = longitude
+        busActivity.subscribe()
+
+    }
+    function getCurrentBusIfAny(){
+        sqliteOps.clear()
+        sqliteOps.instance(PeakMapConfig.db.useTable(prl.tableName))
+        var filters = {}
+        filters[prl.active.columnName] = true
+        filters[prl.createdKey.columnName] = PeakMapConfig.formatDateNow()
+        sqliteOps.filter(filters)
+        sqliteOps.orderBy(prl.createdAt.columnName)
+        sqliteOps.limit(1)
+        sqliteOps.offset(0)
+        sqliteOps.runQuery((data)=>{
+           if(data.length > 0 ){
+                var d= data[0]
+                registerBusToApp(d)
+            }
+        },true)
+    }
 
     Component.onCompleted: {
-        gbn.busId="12f50f9570d37b983293e208aee898391423d6c9b85c12e1ec2e43c0a6b39ccc"
-        gbn.sendRequest((s,e)=>{})
+
     }
     Timer{
         repeat:true
@@ -436,18 +587,111 @@ Item{
         }
     }
 
+    function getDistance(lat1, lon1 ,lat2 ,lon2){
+        const R =6371000;
+        const toRad =(deg) => deg* (Math.PI/180)
+
+        const p1 = toRad(lat1)
+        const p2 =toRad(lat2)
+        const latdif = toRad(lat2 - lat1)
+        const longdif = toRad(lon2 - lon1)
+
+        const a = Math.sin(latdif /2 )**2 +
+                  Math.cos(p1) * Math.cos(p2) *
+                 Math.sin(longdif/ 2) ** 2;
+
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+
+        return R* c;
+
+    }
+
     PositionSource{
         id: pos
         active: true
-        updateInterval: 1000
+        updateInterval: 500
+        property real freeFlow: 60
         property var counter:0
+        property int updateSentFrequency: 60 // send every 30 seconds
+        property int frequencyCounter: 0
         onPositionChanged: {
             map.addPin(pos.position.coordinate.latitude,
                        pos.position.coordinate.longitude,
                        "me")
+            if(!hasBus) return
+            var distance = getDistance(currentBusLatitude, currentBusLongitude,
+                                       pos.position.coordinate.latitude,
+                                       pos.position.coordinate.longitude)
+
+            if(distance > 50){
+                //should popup that the passenger already out from the current bus
+                sqliteOps.instance(PeakMapConfig.db.useTable(prl.tableName))
+                var f={}
+                f[prl.busId.columnName] = busId
+                f[prl.active.columnName] = true
+                sqliteOps.clear()
+                sqliteOps.filter(f)
+                sqliteOps.runQuery((data)=>{
+                      if(data.length > 0 ){
+                            var d=data[0]
+                            d.active = false
+                       }
+                      sqliteOps.update(d)
+                       hasBus=false
+                       busId=""
+                       currentBusLatitude=0
+                      currentBusLongitude=0
+                       routeBus.model=[]
+                         numPassenger.passenger = 0
+                      getCurrentBusIfAny()
+                },true)
+
+                exitPassengerPopup.open()
+                return
+            }
+
+            if(frequencyCounter >= updateSentFrequency){
+                frequencyCounter= 0
+                return
+            }
+
+            if(position.speedValid){
+                let speedKmh= position.speed * 3.6
+                if(speedKmh === 0 ){
+                    return
+                }
+
+                if(speedKmh > pos.freeFlow){
+                    pos.freeFlow  = speedKmh
+                    return
+                }
+                let analysisSpeed = 0
+                if(speedKmh === pos.freeFlow){
+                     return
+                }
+
+
+                analysisSpeed = ((1 - (speedKmh/freeFlow)) * 100);
+                console.log("Your speed is currently "+ speedKmh + " over "+analysisSpeed, freeFlow)
+                if(analysisSpeed < 10){
+                    return
+                }
+
+
+                congestionReporter.lat = pos.position.coordinate.latitude
+                congestionReporter.lon = pos.position.coordinate.longitude
+                congestionReporter.speed = speedKmh //send the real speed
+                congestionReporter.sendRequest((s,e)=>{
+
+                })
+                frequencyCounter++
+
+            }
         }
 
     }
+
+
 
     Drawer{
         parent: Overlay.overlay
@@ -469,20 +713,17 @@ Item{
               qrScanner.close()
               loading.open()
               try{
+                console.log("READING ",qrScanner.captured)
                   var json = JSON.parse(qrScanner.captured)
                   gbn.busId = json.busId
                   gbn.sendRequest((s,d)=>{
                     loading.close()
                     if(!s){
-                        //show error
+                        //show e
                     }
 
-                    /*
-                    PeakMapConfig.currentBusId = gbn.busId
-                    PeakMapConfig.currentBusName = d
 
-                    routeBus.model =[{ "bus":d, "route":"Getting info, Please wait.."  }]
-                    */
+
                   })
               }catch(err){
                   console.log(err)
@@ -520,23 +761,24 @@ Item{
             CapacityLoadType{
                 id:capacity
                 onCaptureData:{
-                     busActivity.busId = gbn.busId
-                    routeBus.model= [
-                        {
-                            "bus": capacity.busName.value,
-                            "route":capacity.location.resultObject.routeName.value
-                        }
-                    ]
-                    numPassenger.passenger = capacity.currentPassengers.value
-                    loadBar.maxPassenger = capacity.maxPassengers.value
-                    loadBar.currentPassenger =  capacity.currentPassengers.value
-                    loadBar.congestionLevel = capacity.congestionLevel.value
+                    console.log('ON CAPTURED ')
+                    var d={}
                     let location = capacity.location.resultObject
-                    if(location.routeName.value){
-                        map.addPin(location.latitude.value , location.longitude.value , gbn.busId, loadBar.congestionLevel )
-                    }
-                    busActivity.subscribe()
-                }
+                    d[prl.active.columnName] = true;
+                    d[prl.busId.columnName] = capacity.busId.value
+                    d[prl.busName.columnName] = capacity.busName.value
+                    d[prl.busLatitude.columnName] = location.latitude.value
+                    d[prl.busLongitude.columnName] = location.longitude.value
+                    d[prl.congestionLevel.columnName] =  capacity.congestionLevel.value
+                    d[prl.currentLoad.columnName] = capacity.currentPassengers.value
+                    d[prl.maxCapacity.columnName] = capacity.maxPassengers.value
+                    d[prl.createdKey.columnName] = PeakMapConfig.formatDateNow()
+                    d[prl.createdAt.columnName] = Date.now()
+                    d[prl.routeName.columnName]= location.routeName.value
+
+
+                    processBusData(d)
+                 }
             }
         }
         onDelegateReturn: (d)=> d.captureData()
@@ -546,12 +788,34 @@ Item{
     Loading{
         id: loading
     }
+
+
     BusActivityUpdateSubscription{
         id: busActivity
         dataItem: Component{
             CapacityLoadType{
                 id: ba
                 onCaptureData: {
+                    if(hasBus && busId=== ba.busId){
+                        var d = {};
+
+                        let location = ba.location.resultObject
+                        d[prl.active.columnName] = true;
+                        d[prl.busId.columnName] = ba.busId.value
+                        d[prl.busName.columnName] = ba.busName.value
+                        d[prl.busLatitude.columnName] = location.latitude.value
+                        d[prl.busLongitude.columnName] = location.longitude.value
+                        d[prl.congestionLevel.columnName] =  ba.congestionLevel.value
+                        d[prl.currentLoad.columnName] = ba.currentPassengers.value
+                        d[prl.maxCapacity.columnName] = ba.maxPassengers.value
+                        d[prl.createdKey.columnName] = PeakMapConfig.formatDateNow()
+                        d[prl.createdAt.columnName] = Date.now()
+                        d[prl.routeName.columnName]= location.routeName.value
+                        processBusData(d)
+                    }
+
+                    /*
+
                     loadBar.currentPassenger = ba.currentPassengers.value
                     numPassenger.passenger = ba.currentPassengers.value
 
@@ -559,16 +823,235 @@ Item{
                     var lastModel =  routeBus.model
                     lastModel[0].route = ba.location.resultObject.routeName.value
 
-
                     routeBus.model =[]
                     routeBus.model = lastModel
-                    let location = ba.location.resultObject
                     if(location.routeName.value){
                         map.addPin(location.latitude.value, location.longitude.value,busActivity.busId, loadBar.congestionLevel)
                     }
+                    */
                 }
             }
         }
         onDelegateReturn:  (d)=> d.captureData()
+
+    }
+
+    GetAnalytics{
+        id: ga
+        onDelegateReturn: (c)=>c.captureData()
+        dataItem: Component{
+            AnalyticsResponseType{
+                id: analytics
+                onCaptureData: {
+                   var ds = []
+                    ds.push(analytics.value.value)
+                    chartScreen.dataSets=[]
+                    chartScreen.dataSets=ds
+                    chartScreen.chartLabels =[]
+                    chartScreen.chartLabels = analytics.record.value
+                    chartScreen.change = analytics.changes.value
+                }
+            }
+        }
+    }
+    function customSlice(arr) {
+      const result = [];
+      var skips = arr.length / 20
+      let index =0
+      while(index < arr.length){
+          result.push(arr[index])
+          index += Math.floor(skips);
+          console.log(skips , index)
+      }
+
+      return result;
+    }
+
+    function reorder(points) {
+        points.sort(function(a, b) {
+              return a.lon === b.lon ? a.lat - b.lat : a.lon - b.lon;
+          });
+
+          function cross(o, a, b) {
+              return (a.lon - o.lon) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lon - o.lon);
+          }
+
+          var lower = [];
+          for (var i = 0; i < points.length; i++) {
+              while (lower.length >= 2 && cross(lower[lower.length-2], lower[lower.length-1], points[i]) <= 0) {
+                  lower.pop();
+              }
+              lower.push(points[i]);
+          }
+
+          var upper = [];
+          for (var j = points.length - 1; j >= 0; j--) {
+              while (upper.length >= 2 && cross(upper[upper.length-2], upper[upper.length-1], points[j]) <= 0) {
+                  upper.pop();
+              }
+              upper.push(points[j]);
+          }
+
+          upper.pop();
+          lower.pop();
+          return lower.concat(upper);
+    }
+
+
+    GetHeatMap{
+        id: ghm
+        dataItem:  Component{
+            GetHeatMapModel{
+                id: ghmm
+
+
+            }
+        }
+        onArrayReturn: (data)=>{
+           //dont add low
+            var pushed = []
+            data.forEach((item)=>{
+                if(item.congestion !== "LOW"){
+                    pushed.push(item)
+                }
+            })
+            heatmapType.heatMapPoints = []
+            heatmapType.heatMapPoints = pushed
+            acOps.instance(PeakMapConfig.db.useTable(ac.tableName))
+            pushed.forEach((item)=>{
+                acOps.clear()
+                var filter= {}
+                filter[ac.createdKey.columnName] = PeakMapConfig.formatDateNow()
+                filter[ac.latitude.columnName] = item.target.latitude
+                filter[ac.longitude.columnName] = item.target.longitude
+                acOps.filter(filter)
+                acOps.runQuery((data)=>{
+                    if(data.length > 0){
+                        var first = data[0]
+                        first[ac.level.columnName] = item.congestion
+                        acOps.update(first)
+                    }else{
+                        var d= {}
+                        d[ac.createdAt.columnName] = Date.now()
+                        d[ac.createdKey.columnName] = PeakMapConfig.formatDateNow()
+                        d[ac.latitude.columnName] = item.target.latitude
+                        d[ac.longitude.columnName] = item.target.longitude
+                        d[ac.level.columnName] = item.congestion
+                        d[ac.routeName.columnName] = item.routeName
+                        acOps.insert(d)
+                    }
+                    updateAlerts()
+                },true)
+
+            })
+        }
+    }
+    CongestionReporter{
+        id: congestionReporter
+
+    }
+    SQLiteOperation{
+        id: sqliteOps
+    }
+
+    PassengerRideLog{
+        id: prl
+
+    }
+
+    AlertCongestion{
+        id: ac
+    }
+    SQLiteOperation{
+        id: acOps
+    }
+
+    function addHeatMap(data){
+
+        var currentHeatMap = heatmapType.heatMapPoints
+        var existIndex = currentHeatMap.findIndex(doc=> doc.target.latitude === data.target.latitude &&
+                                              doc.target.longitude === data.target.longitude)
+        if(existIndex > -1){
+
+            currentHeatMap[existIndex].congestion = data.congestion
+        }else{
+            currentHeatMap.push(data)
+        }
+        heatmapType.heatMapPoints= []
+        heatmapType.heatMapPoints = currentHeatMap
+    }
+
+
+    GetTodayBusActivity{
+        id: gtba
+         dataItem: Component{
+             BusActivity{}
+         }
+
+        onArrayReturn: (data)=>{
+            console.log("GET TODAY BUS ACTIVITY ",
+                        JSON.stringify(data))
+            for(var i=0; i < data.length; i++){
+                    var bus = data[i]
+                    sendBusActivity(bus.busId,
+                                    {
+                                        latitude : bus.currentLocation.latitude,
+                                        longitude: bus.currentLocation.longitude
+                                    },
+                                    bus.congestionLevel)
+            }
+        }
+    }
+
+    Popup{
+        id: exitPassengerPopup
+        modal:true
+        parent: Overlay.overlay
+        width: parent.width
+        height: parent.height
+        background: Rectangle
+        {
+            color:"#80FFFFFF"
+        }
+        Frame{
+            anchors.centerIn: parent
+            width: parent.width -48
+            height: 200
+            background: Rectangle{
+                radius: 4
+            }
+            ColumnLayout{
+                 anchors.fill: parent
+                 Item{
+                     Layout.fillWidth: true
+                     Layout.fillHeight: true
+                    Text{
+                        text:"Our system detected that you are 50 meters away from your current bus, and you have been automatically recorded as exited."
+                        width: parent.width - 24
+                        anchors.centerIn: parent
+                        wrapMode: Text.WordWrap
+                        font.pixelSize: 16
+                        font.weight: 500
+                    }
+                 }
+                 Item{
+                     Layout.fillWidth: true
+                     Layout.preferredHeight: 40
+                     Button{
+                         width: 150
+                         height: 35
+                         text:"Okay"
+                         anchors.right: parent.right
+                         anchors.verticalCenter: parent.verticalCenter
+                         rightInset: 16
+                         leftInset: 16
+                         onClicked: {
+                             exitPassengerPopup.close()
+                         }
+                     }
+                 }
+            }
+
+        }
     }
 }
