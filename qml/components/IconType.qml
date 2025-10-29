@@ -13,4 +13,10 @@ QtObject{
     property string warning: _path.arg("warning.svg")
     property string bell: _path.arg("bell.svg")
     property string qrCode: _path.arg("qrCode.svg")
+    property string bluetooth: _path.arg("bluetooth.svg")
+    property string logout:_path.arg("logout.svg")
+    property string mapmarker: _path.arg("mapmarker.svg")
+    function init(){
+        console.log('ICON LOADED')
+    }
 }

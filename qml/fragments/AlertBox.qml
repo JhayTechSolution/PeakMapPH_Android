@@ -3,7 +3,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
 Popup{
-    signal okCallback()
 
     background: Rectangle{
         color:"#80FFFFFF"
@@ -61,29 +60,15 @@ Popup{
                 Layout.preferredHeight: 1
                 color:"#e8e8e8"
             }
-            Item{
-                Layout.fillWidth: true
-                Layout.preferredHeight: 48
+
+            Button{
+                Layout.alignment: Qt.AlignRight
                 Layout.rightMargin: 24
                 Layout.bottomMargin: 24
                 Layout.topMargin: 16
-                RowLayout{
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 16
-                    Button{
-
-                        text:"No"
-                        onClicked: ctrl.close()
-                    }
-                    Button{
-                        text:"Yes"
-                        onClicked: ctrl.okCallback()
-                    }
-
-                }
+                text:"Ok"
+                onClicked: ctrl.close()
             }
-
         }
     }
     id: ctrl

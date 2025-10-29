@@ -4,7 +4,10 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import "../components"
 import "../"
+import "../fragments"
+import "../network/graphql/model"
 Rectangle{
+    signal loginSuccessful()
     anchors.fill: parent
     color:"#222222"
 
@@ -81,6 +84,7 @@ Rectangle{
             rightPadding: 24
             color:"white"
             placeholderText:"Username"
+            id: username
             placeholderTextColor:"#888888"
         }
 
@@ -97,6 +101,7 @@ Rectangle{
             rightPadding: 24
             color:"white"
             echoMode:TextInput.Password
+            id: password
             placeholderText:"Password"
             placeholderTextColor:"#888888"
         }
@@ -120,7 +125,14 @@ Rectangle{
                 font.pixelSize:20
                 font.weight:500
             }
-
+            onClicked: {
+                loader.open()
+                loginRequest.username = username.text
+                loginRequest.password = password.text
+                loginRequest.sendRequest((s,e)=>{
+                                         loader .close()
+                                         })
+            }
         }
 
     }
@@ -136,5 +148,43 @@ Rectangle{
             font.pixelSize: 14
 
         }
+    }
+    Loading{
+        id: loader
+        width: parent.width
+        height: parent.height
+    }
+
+    LoginRequest{
+        id: loginRequest
+        dataItem: AccountInfo{
+            id: account
+             onCaptureData: {
+
+                 let role_type = account.role.value
+
+                 if(role_type !== "DRIVER"){
+                     mAlertBox.title="Failed to login"
+                     mAlertBox.message ="You are not allowed to login"
+                     mAlertBox.open()
+                     return
+                 }
+
+                 PeakMapConfig.login_user =account.username.value
+                 PeakMapConfig.id= account.accountId.value
+                 PeakMapConfig.role = account.role.value
+                 PeakMapConfig.fullName = account.fullName.value
+                loginSuccessful()
+             }
+        }
+        onDelegateReturn: (d)=>d.captureData()
+    }
+    AlertBox{
+        id: mAlertBox
+        width: parent.width
+        height: parent.height
+    }
+    Keys.onPressed: {
+        console.log('key login')
     }
 }

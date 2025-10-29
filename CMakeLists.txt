@@ -6,7 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(QMapLibre_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/QMapLibre")
-find_package(Qt6 REQUIRED COMPONENTS Positioning Location Multimedia Sql  Concurrent WebSockets Charts Quick )
+find_package(Qt6 REQUIRED COMPONENTS Positioning Location Multimedia Sql  Concurrent WebSockets Charts Quick Bluetooth )
 #find_package(FelgoHotReload REQUIRED COMPONENTS Multimedia Positioning Location Charts Quick)
 
 
@@ -55,7 +55,7 @@ set_source_files_properties("./qml/qmldir" PROPERTIES ALIAS "/Com/Plm/PeakMapPH/
 qt_add_executable(appPeakMapPHApp
     main.cpp
     ${SrcFiles}
-  #  design.qrc
+    design.qrc
 )
 if(ANDROID)
 
@@ -86,6 +86,7 @@ target_link_libraries(appPeakMapPHApp PRIVATE
     Qt6::Multimedia
     Qt6::Sql
     QMapLibre::Location
+    Qt6::Bluetooth
 )
 
 qmaplibre_location_setup_plugins(appPeakMapPHApp)

@@ -7,4 +7,5 @@ QtObject{
     required property string dataType
     property CoreResponse resultObject: CoreResponse{}
     property var value
+    property string propertyName //optional but default to property declared
 }

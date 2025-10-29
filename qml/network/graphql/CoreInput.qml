@@ -51,8 +51,12 @@ QtObject{
                     obj[inputName] = root[currentProps].value
 
                 }else{
-
-                    obj[inputName] = root[currentProps].value.createInput();
+                    try{
+                        obj[inputName] = root[currentProps].value.createInput();
+                    }catch(err){
+                        //not an object maybe its just an enum
+                        obj[inputName] = root[currentProps].value
+                    }
                 }
                 if(root[currentProps].isRequired){
                     dType +="!"

@@ -35,7 +35,25 @@ QtObject{
       return `${month}${day}${year}`;
     }
 
+    property string login_user;
+    property string role;
+    property string id;
+    property string fullName;
+    property string busName
+    property string busId;
+    property int maxPassenger;
+    property int currentPassenger
+    property PeakMapService currentService
+    property bool deviceBooted : false
 
+    property string serviceId
+    property string charId ;
+
+    property AESHelper aesHelper:AESHelper{
+         id: aesHelper
+         passkey: "PeakMapBluez123!"
+
+    }
 
 
 }

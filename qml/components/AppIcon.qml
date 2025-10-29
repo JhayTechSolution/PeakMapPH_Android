@@ -3,13 +3,24 @@ import Qt5Compat.GraphicalEffects
 Item{
     id: ctl
     property string iconType
+    onIconTypeChanged: {
+        if(!iconType){
+            return
+        }
+        if(iconType == ""){
+            return
+        }
+
+        img.source = iconType
+    }
+
     property int size
     width: ctl.size
     height: ctl.size
     property string color
     clip:true
     Image{
-      source: iconType
+      id: img
       width: parent.width
       height: parent.height
       layer.enabled: true

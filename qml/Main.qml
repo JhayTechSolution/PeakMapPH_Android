@@ -1,16 +1,12 @@
 import QtQuick
-import QtPositioning
-import QtLocation
 import QtQuick.Layouts
 import QtQuick.Controls
-import QtCharts
-import "pages"
-import "../qml" as P
-import "db"
-import Com.Plm.PeakMapPH
-import "../qml/network/graphql/model"
-import "components"
 import QtCore
+import "./components"
+import "./pages"
+import  PeakMapPHApp
+import Com.Plm.PeakMapPH
+
 ApplicationWindow{
     id:root
 
@@ -18,41 +14,11 @@ ApplicationWindow{
     height: (Qt.platform.os !== "android") ? 800: -1
 
 
-    LocationPermission{
 
-        id: locationPermision
-        onStatusChanged: {
-            if(status !== Qt.Granted){
-                request()
-                return
-            }
-            PeakMapConfig.initConfig()
-            PeakMapConfig.gtransport.connectServer()
-            PeakMapConfig.gtransport.connectionOkay.connect(()=>{
-                baua.subscribe()
-                stationLoad.subscribe()
-                cus.subscribe()
-                tsu.sendRequest((c,x)=>{})
-                mDashboard.startLoad()
-                mReportPage.startLoad()
-            })
-        }
-    }
 
-    function calledBack(){
-        swipePage.focus=true
-   }
-
-    function getApplication(){
-        return root
-    }
-
-    function dp(x){
-        return app.dp(x)
-    }
 
     flags: Qt.Window | Qt.WindowStaysOnTopHint
-    property int tabIndex: 0
+    property alias tabIndex: swipeSession.currentIndex
     title:"Peak Map PH"
     visible:true
     background: Rectangle{
@@ -80,8 +46,28 @@ ApplicationWindow{
                         Layout.preferredHeight: 40
                         Layout.preferredWidth: 40
                         AppIcon{
+                            visible: PeakMapConfig.login_user !== ""
                             anchors.centerIn: parent
-                            iconType: IconType.user
+                            iconType: IconType.logout
+                            color: "white"
+                            size: 24
+                            MouseArea{
+                                anchors.fill: parent
+                                onPressed:{
+                                    parent.opacity = 0.6
+                                }
+                                onReleased:{
+                                    parent.opacity = 1
+                                    confirmLogout.open()
+
+                                }
+                            }
+                        }
+
+                        AppIcon{
+                            visible: PeakMapConfig.login_user == ""
+                            anchors.centerIn: parent
+                            iconType:   IconType.user
                             color: "white"
                             size: 24
                             MouseArea{
@@ -91,6 +77,7 @@ ApplicationWindow{
                                 }
                                 onReleased: {
                                     parent.opacity=1
+
                                     loginPage.open()
                                 }
                             }
@@ -124,53 +111,21 @@ ApplicationWindow{
     }
 
 
-
-
-    SwipeView{
-        id: swipePage
+    SwipeSessionView{
+        id: swipeSession
         anchors.fill: parent
-        currentIndex: tabIndex
-        interactive: false
-        focus: true
-        onFocusChanged: {
-            if(!focus){
-                focus = true
-            }
-
+        currentIndex:  tabIndex
+        Keys.onPressed: {
+            console.log('key3')
         }
-
-        Keys.onBackPressed: {
-            if(loginPage.opened){
-                loginPage.close()
-                return
-            }
-            exitConfirm.open()
-
-        }
-
-        DashboardPage{
-            id: mDashboard
-            onUpdateAlerts: {
-                mAlertPage.refreshAlerts()
-            }
-
-        }
-        ReportPage{
-            id: mReportPage
-        }
-        AlertPage{
-            id:mAlertPage
-
-        }
-        AboutPage{
-
-        }
-
 
     }
 
 
+
+
     footer:  ToolBar{
+        visible: PeakMapConfig.id === "" || PeakMapConfig.login_user===""
         height:80
         background: Rectangle{
             color:"black"
@@ -198,6 +153,7 @@ ApplicationWindow{
                         Layout.alignment: Qt.AlignHCenter
                     }
                     Text{
+
                         Layout.alignment: Qt.AlignHCenter
                         text:"Dashboard"
                         font.pixelSize: 14
@@ -240,7 +196,7 @@ ApplicationWindow{
                     property SQLiteOperation dbOperation: SQLiteOperation{
 
                     }  AppIcon{
-                        iconType: IconType.bell
+                        iconType:  IconType.bell
 
                         color: (tabIndex===2) ? "white":"#353940"
                         size:24
@@ -287,78 +243,9 @@ ApplicationWindow{
         }
 
     }
-
     Component.onCompleted: {
-       locationPermision.statusChanged()
-
-
-
-    }
-
-    BusActivityUpdateAll{
-        id:  baua
-        dataItem: Component{
-            BusActivity{
-                id: bus
-                onCaptureData: {
-                     mDashboard.sendBusActivity(bus.busId.value,
-                                               {
-                                                 latitude : bus.currentLocation.resultObject.latitude.value,
-                                                 longitude: bus.currentLocation.resultObject.longitude.value
-                                               },
-                                               bus.congestionLevel.value)
-                }
-            }
-        }
-        onDelegateReturn:  (c)=> c.captureData()
-    }
-
-
-    StationLoadUpdateSubscription{
-        id :stationLoad
-        onArrayReturn: (data)=>{
-            mDashboard.sendLoadRank(data)
-
-        }
-
-    }
-    TriggerStationUpdate{
-        id: tsu
-
-    }
-
-    CongestionUpdateSubscription{
-        id: cus
-        onArrayReturn: (data)=>{
-            mDashboard.addHeatMap({
-                target: {
-                    latitude: data.latitude,
-                    longitude: data.longitude
-                },
-                congestion: data.level
-            })
-            if(data.level === "LOW"){
-                return
-            }
-
-            ops.instance(PeakMapConfig.db.useTable(ac.tableName));
-            data[ac.createdAt.columnName] = Date.now()
-            data[ac.createdKey.columnName] = PeakMapConfig.formatDateNow()
-            ops.insert(data)
-
-
-            mAlertPage.refreshAlerts()
-        }
-
-    }
-
-    AlertCongestion{
-        id: ac
-    }
-
-    SQLiteOperation{
-        id: ops
-
+        IconType.init()
+        PeakMapConfig.initConfig()
     }
 
     Drawer{
@@ -371,29 +258,20 @@ ApplicationWindow{
         }
         interactive: false
         edge: Qt.BottomEdge
-        focus:false
-        onFocusChanged: {
-            if(!focus){
-                if(loginPage.opened){
-                    focus= true
-                }
-            }
-        }
 
         LoginPage{
             anchors.fill: parent
             onCloseRequest: {
                 loginPage.close()
             }
-        }
-        onAboutToHide: {
-            swipePage.focus = true
-        }
-        Keys.onBackPressed: {
-            if(opened){
+            onLoginSuccessful:{
                 loginPage.close()
+                swipeSession.reloadView()
+                headerTitle.text= "Peakmap Driver App"
             }
         }
+
+
 
    }
 
@@ -461,6 +339,39 @@ ApplicationWindow{
         }
     }
 
+    ConfirmationBox{
+        width: parent.width
+        height: parent.height
+        message: "Do you want to logout from the system ?"
+        onOkCallback: {
+
+            close()
+            try{
+                 PeakMapConfig.login_user = ""
+                 PeakMapConfig.id= ""
+                 PeakMapConfig.role = ""
+                 PeakMapConfig.fullName = ""
+                PeakMapConfig.currentBusName = ""
+                PeakMapConfig.currentBusId = ""
+                PeakMapConfig.currentPassenger =0
+                PeakMapConfig.busId = ""
+                PeakMapConfig.busName= ""
+                PeakMapConfig.maxPassenger = 0
+                console.log('service cleared')
+               root.tabIndex= 0
+                Qt.callLater(()=>{
+                    swipeSession.reloadView()
+
+                })
+            }catch(err){
+                console.log(err)
+            }
+        }
+        id: confirmLogout
+        title: "Confirm action"
+    }
+
 
 
 }
+

@@ -5,6 +5,7 @@ import Com.Plm.PeakMapPH 1.0
 import "../"
 import "../db"
 import "../components"
+import PeakMapPHApp
 Item {
     function refreshAlerts(){
        readAlerts()
@@ -65,6 +66,7 @@ Item {
                             iconType: IconType.bello
                             color:"white"
                             anchors.centerIn: parent
+                            size: 24
                         }
                     }
                     ColumnLayout{
@@ -119,6 +121,7 @@ Item {
                             iconType: IconType.bello
                             color:"white"
                             anchors.centerIn: parent
+                            size: 24
                         }
                     }
                     ColumnLayout{

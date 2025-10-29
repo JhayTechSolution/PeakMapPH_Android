@@ -21,7 +21,7 @@ Item {
 
     property string timeRange:mRepeater.model[selectIndex]
     onTimeRangeChanged: {
-        Component.completed()
+        startLoad()
     }
 
     id: item

@@ -56,5 +56,21 @@
         <file>assets/svg/bello.svg</file>
         <file>assets/svg/bell.svg</file>
         <file>assets/svg/qrCode.svg</file>
+        <file>qml/pages/DriverScreen.qml</file>
+        <file>qml/pages/SwipeSessionView.qml</file>
+        <file>qml/network/graphql/model/LoginInput.qml</file>
+        <file>qml/network/graphql/model/AccountInfo.qml</file>
+        <file>qml/network/graphql/model/LoginRequest.qml</file>
+        <file>qml/fragments/AlertBox.qml</file>
+        <file>assets/svg/bluetooth.svg</file>
+        <file>qml/pages/DriverActivityScreen.qml</file>
+        <file>qml/network/graphql/model/BusCounterInput.qml</file>
+        <file>qml/network/graphql/model/UpdateBusCounter.qml</file>
+        <file>qml/network/graphql/model/BusActivityInput.qml</file>
+        <file>qml/network/graphql/model/CreateBusActivity.qml</file>
+        <file>qml/network/graphql/model/ClearBusActivity.qml</file>
+        <file>qml/network/graphql/model/GetLocationName.qml</file>
+        <file>assets/svg/mapmarker.svg</file>
+        <file>qml/network/graphql/model/GetStationLoadRank.qml</file>
     </qresource>
 </RCC>

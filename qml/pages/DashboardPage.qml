@@ -12,17 +12,26 @@ import "../network/graphql/model"
 import "../"
 import QtCharts
 import "../db"
+
 import Com.Plm.PeakMapPH 1.0
+import PeakMapPHApp
 Item{
     function startLoad(){
 
-
+        console.log("GET BUS")
         ga.analyticsType="PeakHours"
         ga.timeRange = "Daily"
         ga.sendRequest((s,e)=>{})
         getCurrentBusIfAny()
         ghm.sendRequest((s,e)=>{})
         gtba.sendRequest((s,e)=>{})
+        /*
+        gbn.busId="18c849fe9bd87741ab89b191e35c42a7de5e4712120d6b68a5f6480609082535"
+        gbn.sendRequest((s,e)=>{})
+        */
+        stationLoadRank.sendRequest((s,e)=>{
+            sendLoadRank(e)
+        })
 
     }
 
@@ -162,6 +171,7 @@ Item{
                         AppIcon{
                             iconType:  IconType.bus
                             anchors.centerIn: parent
+                            size: 24
                         }
                     }
 
@@ -294,7 +304,9 @@ Item{
                     onValueChanged: {
                         if(width === 0 ){
                             Qt.callLater(()=>{
-                                             valueChanged()
+                                             try{
+                                                 valueChanged()
+                                             }catch(err){}
                                          })
                             return
                         }
@@ -569,6 +581,7 @@ Item{
         sqliteOps.offset(0)
         sqliteOps.runQuery((data)=>{
            if(data.length > 0 ){
+                console.log("RUN QUERY");
                 var d= data[0]
                 registerBusToApp(d)
             }
@@ -618,6 +631,8 @@ Item{
             map.addPin(pos.position.coordinate.latitude,
                        pos.position.coordinate.longitude,
                        "me")
+
+
             if(!hasBus) return
             var distance = getDistance(currentBusLatitude, currentBusLongitude,
                                        pos.position.coordinate.latitude,
@@ -677,13 +692,13 @@ Item{
                     return
                 }
 
-
+                /*
                 congestionReporter.lat = pos.position.coordinate.latitude
                 congestionReporter.lon = pos.position.coordinate.longitude
                 congestionReporter.speed = speedKmh //send the real speed
                 congestionReporter.sendRequest((s,e)=>{
 
-                })
+                })*/
                 frequencyCounter++
 
             }
@@ -853,6 +868,11 @@ Item{
                 }
             }
         }
+    }
+    GetStationLoadRank{
+        id :stationLoadRank
+
+
     }
     function customSlice(arr) {
       const result = [];
